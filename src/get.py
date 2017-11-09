@@ -6,22 +6,38 @@ import json
 
 import config
 
-#variables
+from findatapy.market import Market, MarketDataRequest, MarketDataGenerator
+
+market = Market(market_data_generator=MarketDataGenerator())
+for month in ['JAN','FEB', 'MAR','APR', 'MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']:
+	print(month)
 
 
-t 
-# dc['ask'] = dc.pop('EURUSD.ask')
-# dc['bid'] = dc.pop('EURUSD.bid')
-# dc.keys()
+md_request = MarketDataRequest(start_date='1 FEB 2016', finish_date='1 JUN 2016',
+                                   category='fx', fields=['bid', 'ask'], freq='tick',
+                                   data_source='dukascopy', tickers=['GBPJPY'])
 
+df = market.fetch_market(md_request)
+print(df.tail(n=5))
 
-mongouri = "mongodb://"+config.mongo['user']+":"+config.mongo['pasw']+"@"+config.mongo['uri']+":27017/admin"
+df.reset_index(level=0, inplace=True)
+df.columns = ['_id','bid','ask']
+print(df.tail(n=5))
+
+dc = df.to_dict('records')
+
+if config.mongo['user'] == "" or config.mongo['pasw'] == "":
+	mongouri = "mongodb://"+config.mongo['uri']+":27017"
+else:
+	mongouri = "mongodb://"+config.mongo['user']+":"+config.mongo['pasw']+"@"+config.mongo['uri']+":27017/admin"
+
 print(mongouri)
+
 client = MongoClient(mongouri)
 
 db = client['prices-data']
 # db = client['tests']
-collection = db['gbpjpy_ticks']
+collection = db['GBPJPY_ticks']
 
 insert = collection.insert_many(dc)
 

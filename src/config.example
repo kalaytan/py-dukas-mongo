@@ -1,5 +1,5 @@
 mongo=dict(
-	uri= 'ip',
-	user= 'XXXX',
-	pass= 'XXXX'
+	uri= '127.0.0.1',
+	user= '',
+	pasw= ''
 )

@@ -1,45 +1,66 @@
 from findatapy.market import Market, MarketDataRequest, MarketDataGenerator
-import pymongo
 from pymongo import MongoClient
-import pprint
-import json
+import datetime
+# import pymongo
+# import pprint
+
 
 import config
 
-from findatapy.market import Market, MarketDataRequest, MarketDataGenerator
-
-market = Market(market_data_generator=MarketDataGenerator())
-for month in ['JAN','FEB', 'MAR','APR', 'MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']:
-	print(month)
 
 
-md_request = MarketDataRequest(start_date='1 FEB 2016', finish_date='1 JUN 2016',
-                                   category='fx', fields=['bid', 'ask'], freq='tick',
-                                   data_source='dukascopy', tickers=['GBPJPY'])
+start = '1 JAN 2015'
+end = '1 NOV 2017'
+symbol = 'eurusd'
 
-df = market.fetch_market(md_request)
-print(df.tail(n=5))
+start = datetime.datetime.strptime(start, '%d %b %Y')
+current_start = start 
+end = datetime.datetime.strptime(end, '%d %b %Y')
 
-df.reset_index(level=0, inplace=True)
-df.columns = ['_id','bid','ask']
-print(df.tail(n=5))
 
-dc = df.to_dict('records')
 
-if config.mongo['user'] == "" or config.mongo['pasw'] == "":
-	mongouri = "mongodb://"+config.mongo['uri']+":27017"
-else:
-	mongouri = "mongodb://"+config.mongo['user']+":"+config.mongo['pasw']+"@"+config.mongo['uri']+":27017/admin"
 
-print(mongouri)
 
-client = MongoClient(mongouri)
+def process_batch(start, end, symbol):
+	market = Market(market_data_generator=MarketDataGenerator())
+	md_request = MarketDataRequest(start_date=start, finish_date=end,
+	                                   category='fx', fields=['bid', 'ask'], freq='tick',
+	                                   data_source='dukascopy', tickers=[symbol.upper()])
 
-db = client['prices-data']
-# db = client['tests']
-collection = db['GBPJPY_ticks']
+	df = market.fetch_market(md_request)
+	print(df.tail(n=5))
 
-insert = collection.insert_many(dc)
+	df.reset_index(level=0, inplace=True)
+	df.columns = ['_id','bid','ask']
+	print(df.tail(n=5))
 
-# doc= collection.find_one({})
-pprint.pprint(insert)
+	dc = df.to_dict('records')
+
+	print("converted to dict")
+
+	if config.mongo['user'] == "" or config.mongo['pasw'] == "":
+		mongouri = "mongodb://"+config.mongo['uri']+":27017"
+	else:
+		mongouri = "mongodb://"+config.mongo['user']+":"+config.mongo['pasw']+"@"+config.mongo['uri']+":27017/admin"
+
+	print(mongouri)
+
+	client = MongoClient(mongouri)
+
+	db = client['prices-data']
+	# db = client['tests']
+	collection = db[symbol.lower()+'_ticks']
+
+	insert = collection.insert_many(dc)
+
+	# doc= collection.find_one({})
+	# print(insert)
+	return insert
+
+
+while current_start < end:
+	print (current_start)
+	current_end = current_start + datetime.timedelta(days=7)
+
+	print (process_batch(start=current_start, end=current_end, symbol=symbol))
+	current_start =current_end

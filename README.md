@@ -1,6 +1,6 @@
 # README #
 
-A quick py script to download data from dukascopy using findatapy and upload to mongodb
+A quick py script to download data from dukascopy using findatapy and upload to mongodb. Please follow T&C of dukascopy!
 
 
 ## docker ##
